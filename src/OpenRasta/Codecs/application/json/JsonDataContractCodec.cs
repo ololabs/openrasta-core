@@ -11,6 +11,7 @@
 using System;
 using System.Runtime.Serialization.Json;
 using OpenRasta.TypeSystem;
+using OpenRasta.TypeSystem.ReflectionBased;
 using OpenRasta.Web;
 
 namespace OpenRasta.Codecs
@@ -24,6 +25,10 @@ namespace OpenRasta.Codecs
         {
             if (destinationType.StaticType == null)
                 throw new InvalidOperationException();
+
+            if (request.Stream.Length == 0)
+              return destinationType.StaticType.GetDefaultValue();
+
             return new DataContractJsonSerializer(destinationType.StaticType).ReadObject(request.Stream);
         }
 
