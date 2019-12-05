@@ -201,6 +201,8 @@ namespace OpenRasta.Hosting
                 Resolver.AddDependencyInstance<IHost>(Host, DependencyLifetime.PerRequest);
 
                 Resolver.Resolve<IPipeline>().Run(context);
+
+                Log.WriteDebug("HostManager.HandleHostIncomingRequestReceived: Request finished. StatusCode: {0}", e.Context.Response.StatusCode);
             });
         }
 
@@ -211,7 +213,7 @@ namespace OpenRasta.Hosting
 
         protected virtual void HandleIncomingRequestProcessed(object sender, IncomingRequestProcessedEventArgs e)
         {
-            Log.WriteDebug("Request finished.");
+            Log.WriteDebug("HostManager.HandleIncomingRequestProcessed: Request finished. StatusCode: {0}", e.Context.Response.StatusCode);
             ThreadScopedAction(() =>
             {
               var scope = (IDisposable) e.Context.PipelineData["openrasta.di.RequestScope"];
