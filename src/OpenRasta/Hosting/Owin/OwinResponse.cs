@@ -52,7 +52,14 @@ namespace OpenRasta.Hosting.Katana
       foreach (var header in Headers)
       {
         NativeContext.Headers.Remove(header.Key);
-        NativeContext.Headers.Append(header.Key, header.Value);
+        if (header.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+        {
+          NativeContext.Headers.Set(header.Key, header.Value);
+        }
+        else
+        {
+          NativeContext.Headers.Append(header.Key, header.Value);
+        }
       }
 
       _headersCommitted = true;
