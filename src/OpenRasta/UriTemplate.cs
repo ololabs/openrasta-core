@@ -339,14 +339,16 @@ namespace OpenRasta
 
       return true;
     }
-
+    string RemoveTrailingSlash(string str)
+    {
+      return str.LastIndexOf('/') == str.Length - 1 ? str.Substring(0, str.Length - 1) : str;
+    }
     public UriTemplateMatch Match(Uri baseAddress, Uri uri)
     {
       var baseLeft = baseAddress.GetLeftPart(UriPartial.Authority);
-      var baseSegments = baseAddress.Segments;
+      var baseSegments = baseAddress.Segments.Select(RemoveTrailingSlash).ToArray();
       return Match(baseAddress, baseLeft, baseSegments, uri);
     }
-
     public UriTemplateMatch Match(Uri baseAddress, string baseLeft, string[] baseSegments, Uri uri)
     {
       if (uri == null)
@@ -355,14 +357,9 @@ namespace OpenRasta
         return null;
 
       var segments = uri.Segments;
-      var candidateSegments = new List<string>(segments.Length);
-      foreach (var segment in segments)
-      {
-        candidateSegments.Add(RemoveTrailingSlash(segment));
-      }
-
+      var candidateSegments = baseSegments.ToList();
       foreach (var baseUriSegment in baseSegments)
-        if (RemoveTrailingSlash(baseUriSegment) == candidateSegments[0])
+        if (baseUriSegment == candidateSegments[0])
           candidateSegments.RemoveAt(0);
 
       if (candidateSegments.Count > 0 && candidateSegments[0] == string.Empty)
@@ -437,11 +434,6 @@ namespace OpenRasta
       QuerySegment templateQuerySegment)
     {
       return requestUriQuerySegments[templateQuerySegment.Key].Value != templateQuerySegment.Value;
-    }
-
-    string RemoveTrailingSlash(string str)
-    {
-      return str.LastIndexOf('/') == str.Length - 1 ? str.Substring(0, str.Length - 1) : str;
     }
 
     public override int GetHashCode()

@@ -52,6 +52,11 @@ namespace OpenRasta
       _keyValuePairsReadOnly = _keyValuePairs.AsReadOnly();
     }
 
+    string RemoveTrailingSlash(string str)
+    {
+      return str.LastIndexOf('/') == str.Length - 1 ? str.Substring(0, str.Length - 1) : str;
+    }
+
     public Collection<UriTemplateMatch> Match(Uri uri)
     {
       var lastMaxLiteralSegmentCount = 0;
@@ -59,7 +64,7 @@ namespace OpenRasta
       if (BaseAddress != null)
       {
         var baseLeft = BaseAddress.GetLeftPart(UriPartial.Authority);
-        var baseSegments = BaseAddress.Segments;
+        var baseSegments = BaseAddress.Segments.Select(RemoveTrailingSlash).ToArray();
         foreach (var template in KeyValuePairs)
         {
           // TODO: discard uri templates with fragment identifiers until tests are implemented
@@ -112,7 +117,7 @@ namespace OpenRasta
       if (BaseAddress != null)
       {
         var baseLeft = BaseAddress.GetLeftPart(UriPartial.Authority);
-        var baseSegments = BaseAddress.Segments;
+        var baseSegments = BaseAddress.Segments.Select(RemoveTrailingSlash).ToArray();
         foreach (var segmentKey in KeyValuePairs)
         {
           UriTemplateMatch potentialMatch = segmentKey.Key.Match(BaseAddress,baseLeft,baseSegments,uri);
