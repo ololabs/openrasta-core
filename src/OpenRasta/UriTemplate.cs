@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace OpenRasta
@@ -119,15 +120,21 @@ namespace OpenRasta
 
     static Dictionary<string, QuerySegment> ParseQueryStringSegments(IEnumerable<QuerySegment> queryString)
     {
-      return queryString
-        .GroupBy(qs => qs.Key, StringComparer.OrdinalIgnoreCase)
-        .ToDictionary(qs => qs.Key, qs => qs.First(), StringComparer.OrdinalIgnoreCase);
+      var result = new Dictionary<string, QuerySegment>(StringComparer.OrdinalIgnoreCase);
+      foreach(var qs in queryString)
+      {
+        if (!result.ContainsKey(qs.Key))
+        {
+          result.Add(qs.Key, qs);
+        }
+      }
+      return result;
     }
-
-    public static IEnumerable<QuerySegment> ParseQueryStringSegments(string query)
+    public static List<QuerySegment> ParseQueryStringSegments(string query)
     {
-      var kvPairs = query.Split('&');
 
+      var kvPairs = query.Split('&');
+      List<QuerySegment> result = new List<QuerySegment>(kvPairs.Length);
       foreach (var kvPair in kvPairs)
       {
         var unescapedString = Uri.UnescapeDataString(kvPair.Replace('+', ' '));
@@ -150,15 +157,15 @@ namespace OpenRasta
             RawValue = val,
             Type = valAsVariable == null ? SegmentType.Literal : SegmentType.Variable
           };
-          yield return (segment);
+          result.Add(segment);
         }
         else
         {
-          yield return new QuerySegment {Key = unescapedString, Value = null, Type = SegmentType.Literal};
+          result.Add(new QuerySegment { Key = unescapedString, Value = null, Type = SegmentType.Literal });
         }
       }
+      return result;
     }
-
     static List<UrlSegment> ParsePathSegments(Uri templateUri)
     {
       var passedSegments = new List<UrlSegment>();
@@ -228,8 +235,8 @@ namespace OpenRasta
         else if (segment.Type == SegmentType.Variable)
         {
           var value = parameters[segment.Text.ToUpperInvariant()];
-          
-          
+
+
           path.Append(value.Replace("/", "%2F")
             .Replace("?", "%3F")
             .Replace("#", "%23"));
@@ -247,7 +254,7 @@ namespace OpenRasta
           var qsValue = parameters[querySegment.Value.Value]
             .Replace("&", "%25")
             .Replace("#", "%23");
-          
+
           path.Append(querySegment.Value.Key).Append("=")
             .Append(qsValue).Append("&");
         }
@@ -336,28 +343,43 @@ namespace OpenRasta
 
     public UriTemplateMatch Match(Uri baseAddress, Uri uri)
     {
-      if (baseAddress == null || uri == null)
+      var baseLeft = baseAddress.GetLeftPart(UriPartial.Authority);
+      var baseSegments = baseAddress.Segments;
+      return Match(baseAddress, baseLeft, baseSegments, uri);
+    }
+
+    public UriTemplateMatch Match(Uri baseAddress, string baseLeft,string[] baseSegments, Uri uri)
+    {
+      if (uri == null)
         return null;
-      if (baseAddress.GetLeftPart(UriPartial.Authority) != uri.GetLeftPart(UriPartial.Authority))
+      if (baseLeft != uri.GetLeftPart(UriPartial.Authority))
         return null;
 
-      var baseUriSegments = baseAddress.Segments.Select(RemoveTrailingSlash);
-      var candidateSegments = new List<string>(uri.Segments.Select(RemoveTrailingSlash));
+      var segments = uri.Segments;
+      var candidateSegments = new List<string>(segments.Length);
+      foreach (var segment in segments)
+      {
+        candidateSegments.Add(RemoveTrailingSlash(segment));
+      }
 
-      foreach (var baseUriSegment in baseUriSegments)
-        if (baseUriSegment == candidateSegments[0])
-          candidateSegments.RemoveAt(0);
+      var cullCount = 0;
+      foreach (var baseUriSegment in baseSegments)
+        if (RemoveTrailingSlash(baseUriSegment) == candidateSegments[cullCount])
+          cullCount++;
 
-      if (candidateSegments.Count > 0 && candidateSegments[0] == string.Empty)
-        candidateSegments.RemoveAt(0);
+      if (candidateSegments.Count > 0 && candidateSegments[cullCount] == string.Empty)
+        cullCount++;
 
-      if (candidateSegments.Count != _segments.Count)
+      var culledCandidates = candidateSegments.GetRange(cullCount, candidateSegments.Count - cullCount);
+
+
+      if (culledCandidates.Count != _segments.Count)
         return null;
 
       var boundVariables = new NameValueCollection(_pathSegmentVariables.Count);
       for (var i = 0; i < _segments.Count; i++)
       {
-        var segment = candidateSegments[i];
+        var segment = culledCandidates[i];
 
         var candidateSegment = new
         {
@@ -366,7 +388,7 @@ namespace OpenRasta
           ProposedSegment = _segments[i]
         };
 
-        candidateSegments[i] = candidateSegment.Text;
+        culledCandidates[i] = candidateSegment.Text;
 
         switch (candidateSegment.ProposedSegment.Type)
         {
@@ -382,7 +404,7 @@ namespace OpenRasta
       }
 
       var queryStringVariables = new NameValueCollection();
-      var uriQuery = ParseQueryStringSegments(uri.Query).ToList();
+      var uriQuery = ParseQueryStringSegments(uri.Query);
       var requestUriQuerySegments = ParseQueryStringSegments(uriQuery);
 
       var queryParams = new Collection<string>();
@@ -414,7 +436,7 @@ namespace OpenRasta
         QueryString = uriQuery,
         QueryParameters = queryParams,
         QueryStringVariables = queryStringVariables,
-        RelativePathSegments = new Collection<string>(candidateSegments),
+        RelativePathSegments = new Collection<string>(culledCandidates),
         RequestUri = uri,
         Template = this,
         WildcardPathSegments = new Collection<string>()
