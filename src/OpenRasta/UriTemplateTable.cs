@@ -51,6 +51,7 @@ namespace OpenRasta
       IsReadOnly = true;
       _keyValuePairsReadOnly = _keyValuePairs.AsReadOnly();
     }
+
     public Collection<UriTemplateMatch> Match(Uri uri)
     {
       var lastMaxLiteralSegmentCount = 0;
@@ -64,7 +65,7 @@ namespace OpenRasta
           // TODO: discard uri templates with fragment identifiers until tests are implemented
           if (template.Key.Fragment.Any()) continue;
 
-          UriTemplateMatch potentialMatch = template.Key.Match(BaseAddress,baseLeft, baseSegments, uri);
+          UriTemplateMatch potentialMatch = template.Key.Match(BaseAddress, baseLeft, baseSegments, uri);
 
           if (potentialMatch == null) continue;
 

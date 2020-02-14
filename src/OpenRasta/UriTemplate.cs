@@ -347,7 +347,7 @@ namespace OpenRasta
       return Match(baseAddress, baseLeft, baseSegments, uri);
     }
 
-    public UriTemplateMatch Match(Uri baseAddress, string baseLeft,string[] baseSegments, Uri uri)
+    public UriTemplateMatch Match(Uri baseAddress, string baseLeft, string[] baseSegments, Uri uri)
     {
       if (uri == null)
         return null;
@@ -375,25 +375,19 @@ namespace OpenRasta
       for (var i = 0; i < _segments.Count; i++)
       {
         var segment = candidateSegments[i];
+        var unescapedText = Uri.UnescapeDataString(segment);
 
-        var candidateSegment = new
-        {
-          Text = segment,
-          UnescapedText = Uri.UnescapeDataString(segment),
-          ProposedSegment = _segments[i]
-        };
+        candidateSegments[i] = segment;
 
-        candidateSegments[i] = candidateSegment.Text;
-
-        switch (candidateSegment.ProposedSegment.Type)
+        switch (_segments[i].Type)
         {
           case SegmentType.Literal when
-            string.CompareOrdinal(candidateSegment.ProposedSegment.Text, candidateSegment.UnescapedText) != 0:
+            string.CompareOrdinal(_segments[i].Text, unescapedText) != 0:
             return null;
           case SegmentType.Wildcard:
             throw new NotImplementedException("Not finished wildcards implementation yet");
           case SegmentType.Variable:
-            boundVariables.Add(candidateSegment.ProposedSegment.Text, Uri.UnescapeDataString(candidateSegment.Text));
+            boundVariables.Add(_segments[i].Text, Uri.UnescapeDataString(segment));
             break;
         }
       }
