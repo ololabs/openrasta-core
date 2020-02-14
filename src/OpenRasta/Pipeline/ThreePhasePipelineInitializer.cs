@@ -12,7 +12,7 @@ namespace OpenRasta.Pipeline
   {
     readonly IEnumerable<IPipelineContributor> _contributors;
     readonly IGenerateCallGraphs _callGrapher;
-    static ILogger Log { get; } = TraceSourceLogger.Instance;
+    static ILogger Log { get; } = NullLogger.Instance;// TraceSourceLogger.Instance;
 
     public ThreePhasePipelineInitializer(
       IEnumerable<IPipelineContributor> contributors,

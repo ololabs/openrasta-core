@@ -13,7 +13,7 @@ namespace OpenRasta.DI.Internal
       ResolveContext = context;
     }
 
-    ILogger Log { get; } = TraceSourceLogger.Instance;
+    private ILogger Log { get; } = NullLogger.Instance;// TraceSourceLogger.Instance;
 
     ResolveContext ResolveContext { get; }
 

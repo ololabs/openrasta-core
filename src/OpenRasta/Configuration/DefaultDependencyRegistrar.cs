@@ -58,7 +58,7 @@ namespace OpenRasta.Configuration
       
       SetCodecRepository<CodecRepository>();
       SetHandlerRepository<HandlerRepository>();
-      SetLogger<TraceSourceLogger>();
+      SetLogger<NullLogger>();
       SetErrorCollector<OperationContextErrorCollector>();
       SetObjectBinderLocator<DefaultObjectBinderLocator>();
       SetOperationCreator<MethodBasedOperationCreator>();
@@ -239,7 +239,7 @@ namespace OpenRasta.Configuration
 
     protected virtual void AddLogSources()
     {
-      LogSourcedLoggerType = typeof(TraceSourceLogger<>);
+      LogSourcedLoggerType = typeof(NullLogger<>);
       LogSourceTypes.AddRange(
           typeof(ILogSource).Assembly.GetExportedTypes()
           .Where(x => !x.IsAbstract && !x.IsInterface && x.IsAssignableTo<ILogSource>()));

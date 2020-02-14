@@ -7,7 +7,7 @@ namespace OpenRasta.Pipeline
 {
   public class LoggingMiddleware : IPipelineMiddleware
   {
-    static readonly ILogger Log = TraceSourceLogger.Instance;
+    static readonly ILogger Log = NullLogger.Instance;//TraceSourceLogger.Instance;
     readonly IPipelineMiddleware _next;
     readonly string _log;
 

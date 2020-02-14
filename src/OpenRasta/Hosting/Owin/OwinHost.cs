@@ -31,8 +31,8 @@ namespace OpenRasta.Hosting.Katana
       if (ConfigurationSource != null)
         resolver.AddDependencyInstance(ConfigurationSource);
       resolver.AddDependency<IContextStore, AmbientContextStore>(DependencyLifetime.Singleton);
-      resolver.AddDependency<ILogger<OwinLogSource>, TraceSourceLogger<OwinLogSource>>(
-        DependencyLifetime.Transient);
+      //resolver.AddDependency<ILogger<OwinLogSource>, TraceSourceLogger<OwinLogSource>>(
+      //  DependencyLifetime.Transient);
       return true;
     }
 
@@ -55,7 +55,7 @@ namespace OpenRasta.Hosting.Katana
 
     internal async Task<ICommunicationContext> ProcessRequestAsync(IOwinContext owinContext)
     {
-      var commContext = new OwinCommunicationContext(owinContext, TraceSourceLogger.Instance);
+      var commContext = new OwinCommunicationContext(owinContext, NullLogger.Instance);
       
       var ambientContext = new AmbientContext();
 

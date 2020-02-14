@@ -11,6 +11,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using Castle.MicroKernel;
 using Castle.MicroKernel.Lifestyle;
+using OpenRasta.Diagnostics;
 
 namespace OpenRasta.DI.Windsor
 {
@@ -74,6 +75,7 @@ namespace OpenRasta.DI.Windsor
         .Named(GetComponentName(typeof(ScopedInstanceStore)))
         .ImplementedBy<ScopedInstanceStore>()
         .LifestyleScoped());
+      _windsorContainer.Register(Component.For(typeof(ILogger<>)).ImplementedBy(typeof(NullLogger<>)).LifestyleSingleton());
     }
 
     public bool HasDependency(Type serviceType)
