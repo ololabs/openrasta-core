@@ -15,7 +15,7 @@ namespace OpenRasta.Hosting.AspNet
     private static ILogger _log = TraceSourceLogger.Instance;
     public void Dispose()
     {
-      _host.Value.host.RaiseStop();
+      //_host.Value.host.RaiseStop();
     }
 
 

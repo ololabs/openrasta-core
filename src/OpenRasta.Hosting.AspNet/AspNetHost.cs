@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Compilation;
+using System.Web.Hosting;
 using OpenRasta.Concordia;
 using OpenRasta.Configuration;
 using OpenRasta.DI;
@@ -14,7 +15,7 @@ using OpenRasta.Web;
 
 namespace OpenRasta.Hosting.AspNet
 {
-  public class AspNetHost : IHost, IHostStartWithStartupProperties
+  public class AspNetHost : IHost, IHostStartWithStartupProperties, IRegisteredObject
   {
     readonly StartupProperties _properties;
     public event EventHandler<IncomingRequestProcessedEventArgs> IncomingRequestProcessed;
@@ -41,6 +42,7 @@ namespace OpenRasta.Hosting.AspNet
       var start = _start;
       start?.Invoke(this, _properties);
       _currentState = State.Started;
+      HostingEnvironment.RegisterObject(this);
     }
 
     public event EventHandler Stop;
@@ -51,7 +53,7 @@ namespace OpenRasta.Hosting.AspNet
     readonly Lazy<IDependencyResolverAccessor> _resolverAccessor;
 
     private State _currentState = State.Unitiliazed;
-    
+
     enum State
     {
       Started,
@@ -59,13 +61,13 @@ namespace OpenRasta.Hosting.AspNet
       Unitiliazed,
       Stopped
     }
-    
+
     public AspNetHost(StartupProperties properties)
     {
       _properties = properties;
       _resolverAccessor = new Lazy<IDependencyResolverAccessor>(CreateResolverAccessor);
       _configSourceFactory = new Lazy<IConfigurationSource>(ConfigurationSourceLocator);
-      
+
     }
 
     IConfigurationSource ConfigurationSource => _configSourceFactory.Value;
@@ -182,6 +184,12 @@ namespace OpenRasta.Hosting.AspNet
     {
       Stop.Raise(this);
       _currentState = State.Stopped;
+    }
+
+    void IRegisteredObject.Stop(bool immediate)
+    {
+      HostingEnvironment.UnregisterObject(this);
+      RaiseStop();
     }
   }
 }
