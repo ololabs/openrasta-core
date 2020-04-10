@@ -49,7 +49,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
 
         public IEnumerable<object> Invoke(object target, params object[] members)
         {
-            return new[]{ _methodInfo.Invoke(target, members) };
+          yield return _methodInfo.Invoke(target, members);
         }
 
         void EnsureInputMembersExist()

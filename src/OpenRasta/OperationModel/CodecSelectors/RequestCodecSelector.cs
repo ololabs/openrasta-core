@@ -28,15 +28,15 @@ namespace OpenRasta.OperationModel.CodecSelectors
     public ILogger Logger { get; set; }
 
     static readonly HashSet<string> _methodsWithoutBody = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-      { "TRACE" }; 
-    
+      { "TRACE" };
+
     bool HasBody
     {
       get
       {
         var isMethodWithoutBody = _methodsWithoutBody.Contains(_request.HttpMethod);
         if (isMethodWithoutBody) return false;
-        
+
         var hasChunkedEncodingHeader = _request.Headers.TryGetValue("transfer-encoding", out var val)
                                 && val.EndsWith("chunked");
 

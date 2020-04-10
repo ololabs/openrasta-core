@@ -23,14 +23,12 @@ namespace OpenRasta.OperationModel.MethodBased
     {
       var instance = CreateInstance(OwnerType, Resolver);
       var parameters = GetParameters();
-      return new[]
-      {
+      yield return
         new OutputMember
         {
           Member = Method.OutputMembers.Single(),
           Value = Method.Invoke(instance, parameters).First()
-        }
-      };
+        };
     }
   }
 }
