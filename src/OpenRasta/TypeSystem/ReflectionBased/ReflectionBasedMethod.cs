@@ -52,7 +52,12 @@ namespace OpenRasta.TypeSystem.ReflectionBased
           yield return _methodInfo.Invoke(target, members);
         }
 
-        void EnsureInputMembersExist()
+        public object InvokeSingle(object target, params object[] members)
+        {
+          return _methodInfo.Invoke(target, members);
+        }
+
+    void EnsureInputMembersExist()
         {
             if (InputMembers == null)
             {

@@ -38,7 +38,7 @@ namespace OpenRasta.Binding
             {
                 try
                 {
-                    return binderMethod.Invoke(null, TypeSystem, member).OfType<IObjectBinder>().Single();
+                    return (IObjectBinder)binderMethod.InvokeSingle(null, TypeSystem, member);
                 }
                 catch (Exception e)
                 {

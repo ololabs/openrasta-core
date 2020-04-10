@@ -64,7 +64,7 @@ namespace OpenRasta.TypeSystem
                     var builder = parameter.Type.CreateBuilder();
                     if (builder.TrySetValue(values, converter))
                     {
-                        addMethod.Invoke(_cachedValue, builder.Value);
+                        addMethod.InvokeSingle(_cachedValue, builder.Value);
                         return true;
                     }
                 }

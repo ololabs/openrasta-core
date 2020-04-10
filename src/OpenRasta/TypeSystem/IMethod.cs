@@ -34,5 +34,7 @@ namespace OpenRasta.TypeSystem
     /// <param name="parameters">The parameters passed to the method when being invoked.</param>
     /// <returns>A list of objects returned by the method.</returns>
     IEnumerable<object> Invoke(object target, params object[] parameters);
+
+    object InvokeSingle(object target, params object[] parameters);
   }
 }
