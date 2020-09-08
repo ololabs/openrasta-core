@@ -12,7 +12,7 @@ namespace OpenRasta.Pipeline
   {
     readonly IEnumerable<IPipelineContributor> _contributors;
     readonly IGenerateCallGraphs _callGrapher;
-    static ILogger Log { get; } = TraceSourceLogger.Instance;
+    static ILogger Log { get; } = NullLogger.Instance; //TraceSourceLogger.Instance;
 
     public ThreePhasePipelineInitializer(
       IEnumerable<IPipelineContributor> contributors,
@@ -31,7 +31,7 @@ namespace OpenRasta.Pipeline
       {
         new CompatibilityMarkPipelineAsFinished()
       };
-      
+
       if (startup.OpenRasta.Errors.HandleCatastrophicExceptions)
       {
         defaults.Add(new CatastrophicFailureMiddleware());
@@ -44,9 +44,9 @@ namespace OpenRasta.Pipeline
         IEnumerable<(IPipelineMiddlewareFactory middleware, ContributorCall contributor)>
       > builder;
 
-      if (startup.OpenRasta.Diagnostics.TracePipelineExecution)
-        builder = LogBuild;
-      else
+      //if (startup.OpenRasta.Diagnostics.TracePipelineExecution)
+      //  builder = LogBuild;
+      //else
         builder = Build;
 
       var pipeline = builder(
@@ -74,19 +74,19 @@ namespace OpenRasta.Pipeline
         yield return contributor;
     }
 
-    IEnumerable<(IPipelineMiddlewareFactory middleware, ContributorCall contributor)> LogBuild(IGenerateCallGraphs callGraphGenerator, IEnumerable<IPipelineMiddlewareFactory> defaults, IEnumerable<IPipelineContributor> contributors, StartupProperties startupProperties)
-    {
-      var loggingFactory = new LoggingMiddlewareFactory();
+    //IEnumerable<(IPipelineMiddlewareFactory middleware, ContributorCall contributor)> LogBuild(IGenerateCallGraphs callGraphGenerator, IEnumerable<IPipelineMiddlewareFactory> defaults, IEnumerable<IPipelineContributor> contributors, StartupProperties startupProperties)
+    //{
+    //  var loggingFactory = new LoggingMiddlewareFactory();
 
-      using (Log.Operation(this, $"Initializing the pipeline. (using {callGraphGenerator.GetType()})"))
-      {
-        foreach (var result in Build(callGraphGenerator, defaults, contributors, startupProperties))
-        {
-          yield return (loggingFactory, null);
-          yield return LogBuildEntry(result);
-        }
-      }
-    }
+    //  using (Log.Operation(this, $"Initializing the pipeline. (using {callGraphGenerator.GetType()})"))
+    //  {
+    //    foreach (var result in Build(callGraphGenerator, defaults, contributors, startupProperties))
+    //    {
+    //      yield return (loggingFactory, null);
+    //      yield return LogBuildEntry(result);
+    //    }
+    //  }
+    //}
 
     (IPipelineMiddlewareFactory middleware, ContributorCall contributor) LogBuildEntry(
       (IPipelineMiddlewareFactory middleware, ContributorCall call) result)

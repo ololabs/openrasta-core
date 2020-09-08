@@ -98,7 +98,7 @@ namespace OpenRasta.Hosting
     void AssignResolver()
     {
       Resolver = Host.ResolverAccessor?.Resolver ?? new InternalDependencyResolver();
-      Log = Resolver.Resolve<IEnumerable<ILogger>>().LastOrDefault() ?? TraceSourceLogger.Instance;
+      Log = Resolver.Resolve<IEnumerable<ILogger>>().LastOrDefault() ?? NullLogger.Instance; // TraceSourceLogger.Instance;
 
       Log.WriteDebug("Using dependency resolver of type {0}", Resolver.GetType());
     }
