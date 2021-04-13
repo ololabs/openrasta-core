@@ -687,9 +687,6 @@ namespace OpenRasta
       public bool TrailingSeparator { get; set; }
     }
   }
-<<<<<<< HEAD
-}
-=======
 
 
   readonly struct StringSegment : IEquatable<StringSegment>
@@ -843,4 +840,4 @@ namespace OpenRasta
     }
   }
 }
->>>>>>> 268e7ea5811642ed2dadd0b4a9dc1371fdd8b8c1
+
