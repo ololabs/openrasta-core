@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OpenRasta.Diagnostics;
 using OpenRasta.OperationModel;
+using OpenRasta.OperationModel.MethodBased;
 using OpenRasta.Pipeline.Diagnostics;
 using OpenRasta.Web;
 
@@ -26,15 +27,26 @@ namespace OpenRasta.Pipeline.Contributors
 
     PipelineContinuation CreateOperations(ICommunicationContext context)
     {
-      if (context.PipelineData.SelectedHandlers == null) return PipelineContinuation.Continue;
-
-      var ops = _creator.CreateOperations(context.PipelineData.SelectedHandlers).ToList();
-      context.PipelineData.OperationsAsync = ops;
+      var uriBoundOperations = context.PipelineData.SelectedResource?.UriModel?.Operations;
+      
+      if (uriBoundOperations != null)
+      {
+        context.PipelineData.OperationsAsync = _creator.CreateOperations(uriBoundOperations).ToList();
+      }
+      // for compat because tests need refactoring
+      else if (context.PipelineData.SelectedHandlers == null)
+      {
+        return PipelineContinuation.Continue;
+      }
+      else if (context.PipelineData.SelectedHandlers != null)
+      {
+        context.PipelineData.OperationsAsync =
+          _creator.CreateOperations(context.PipelineData.SelectedHandlers).ToList();
+      }
 
       LogOperations(context.PipelineData.OperationsAsync);
-
-      if (ops.Any()) return PipelineContinuation.Continue;
-
+      if (context.PipelineData.OperationsAsync.Any())
+        return PipelineContinuation.Continue;
       context.OperationResult = CreateMethodNotAllowed(context);
       return PipelineContinuation.RenderNow;
     }

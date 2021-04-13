@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using LibOwin;
-using OpenRasta.DI;
 using OpenRasta.Web;
 
-namespace OpenRasta.Hosting.Katana
+namespace OpenRasta.Hosting.Owin
 {
   class OwinResponse : IResponse
   {
@@ -13,7 +12,7 @@ namespace OpenRasta.Hosting.Katana
 
     bool _headersCommitted;
 
-    Dictionary<string, Action<IOwinResponse, string>> _nativeAssignements;
+    readonly Dictionary<string, Action<IOwinResponse, string>> _nativeAssignements;
 
     public OwinResponse(IOwinContext context)
     {
@@ -57,12 +56,12 @@ namespace OpenRasta.Hosting.Katana
       ProtectHeadersSent();
 
       NativeContext.StatusCode = _statusCode;
-      foreach (var header in Headers)
+      foreach (var headerKey in Headers.Keys)
       {
-        if (_nativeAssignements.TryGetValue(header.Key, out var setter))
-          setter(NativeContext, header.Value);
+        if (_nativeAssignements.TryGetValue(headerKey, out var setter))
+          setter(NativeContext, Headers[headerKey]);
         else
-          NativeContext.Headers.Set(header.Key, header.Value);
+          NativeContext.Headers.SetValues(headerKey, Headers.GetValues(headerKey).ToArray());
       }
 
       _headersCommitted = true;

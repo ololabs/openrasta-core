@@ -3,12 +3,12 @@ using System.Threading.Tasks;
 using LibOwin;
 using OpenRasta.Concordia;
 using OpenRasta.Configuration;
-using OpenRasta.Diagnostics;
 using OpenRasta.DI;
+using OpenRasta.Diagnostics;
 using OpenRasta.Pipeline;
 using OpenRasta.Web;
 
-namespace OpenRasta.Hosting.Katana
+namespace OpenRasta.Hosting.Owin
 {
   public class OwinHost : IHost, IHostStartWithStartupProperties
   {
@@ -18,7 +18,7 @@ namespace OpenRasta.Hosting.Katana
       string applicationVirtualPath = "/")
     {
       ConfigurationSource = configuration;
-      ResolverAccessor = resolverAccesor;
+      ResolverAccessor = resolverAccesor ?? configuration as IDependencyResolverAccessor;
       ApplicationVirtualPath = applicationVirtualPath;
     }
 
@@ -79,13 +79,14 @@ namespace OpenRasta.Hosting.Katana
     internal virtual Task RaiseIncomingRequestReceived(ICommunicationContext context)
     {
       var request = new IncomingRequestReceivedEventArgs(context);
-      IncomingRequestReceived.Raise(this, request);
+      IncomingRequestReceived?.Invoke(this, request);
       return request.RunTask;
     }
 
     internal void RaiseIncomingRequestProcessed(ICommunicationContext context)
     {
-      IncomingRequestProcessed.Raise(this, new IncomingRequestProcessedEventArgs(context));
+      IncomingRequestProcessedEventArgs args = new IncomingRequestProcessedEventArgs(context);
+      IncomingRequestProcessed?.Invoke(this, args);
     }
 
     internal virtual void RaiseStart()
@@ -95,7 +96,11 @@ namespace OpenRasta.Hosting.Katana
 
     public void RaiseStop()
     {
-      Stop?.Raise(this);
+      EventHandler tempQualifier = Stop;
+      if (tempQualifier != null)
+      {
+        tempQualifier?.Invoke(this, EventArgs.Empty);
+      }
     }
 
     public event EventHandler<StartupProperties> Start;

@@ -52,14 +52,13 @@ namespace OpenRasta.TypeSystem.ReflectionBased
 
     public static object CreateInstance(this Type type)
     {
-      if (type.IsInterface)
-      {
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IDictionary<,>))
-          return Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(type.GetGenericArguments()));
+      if (!type.IsInterface) return Activator.CreateInstance(type);
 
-        if (type.FindInterface(typeof(IEnumerable<>)) != null)
-          return Activator.CreateInstance(typeof(List<>).MakeGenericType(type.GetGenericArguments()));
-      }
+      if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+        return Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(type.GetGenericArguments()));
+
+      if (type.FindInterface(typeof(IEnumerable<>)) != null)
+        return Activator.CreateInstance(typeof(List<>).MakeGenericType(type.GetGenericArguments()));
 
       return Activator.CreateInstance(type);
     }
@@ -119,6 +118,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
           return values;
         throw new NotSupportedException("Could not convert he values to an array");
       }
+
       // IEnumerable<>
       if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
       {
@@ -157,6 +157,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
         {
           list.Add(item);
         }
+
         return list;
       }
 
@@ -215,7 +216,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
     public static IEnumerable<KeyValuePair<PropertyInfo, ParameterInfo[]>> FindIndexers(this Type target,
       int parameterCount)
     {
-      if (target == null) throw new ArgumentNullException("target");
+      if (target == null) throw new ArgumentNullException(nameof(target));
       return from property in target.GetDefaultMembers().OfType<PropertyInfo>()
         let parameters = property.GetIndexParameters()
         where parameters.Length == parameterCount
@@ -232,14 +233,15 @@ namespace OpenRasta.TypeSystem.ReflectionBased
     /// <exception cref="ArgumentException">The type is not an interface</exception>
     public static Type FindInterface(this Type type, Type interfaceType)
     {
-      if (type == null) throw new ArgumentNullException("type");
-      if (interfaceType == null) throw new ArgumentNullException("interfaceType");
-      if (!interfaceType.IsInterface) throw new ArgumentException("The type is not an interface", "interfaceType");
-      if (type == interfaceType)
-        return type;
+      if (type == null) throw new ArgumentNullException(nameof(type));
+      if (type == interfaceType) return type;
+      if (interfaceType == null) throw new ArgumentNullException(nameof(interfaceType));
+      if (!interfaceType.IsInterface)
+        throw new ArgumentException("The type is not an interface", nameof(interfaceType));
 
       if (!interfaceType.IsGenericTypeDefinition)
-        return type.GetInterface(interfaceType.FullName, false);
+        return interfaceType.IsAssignableFrom(type) ? interfaceType : null;
+
       IEnumerable<Type> interfacesToSearchFor;
       if (type.IsInterface)
         interfacesToSearchFor = new[] {type};
@@ -248,6 +250,11 @@ namespace OpenRasta.TypeSystem.ReflectionBased
       return interfacesToSearchFor.Concat(type.GetInterfaces())
         .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == interfaceType);
     }
+
+    // static Dictionary<(Type, Type), Type> CreateFindInterfacesCache()
+    // {
+    //   
+    // }
 
     public static PropertyInfo FindPropertyCaseInvariant(this Type type, string propertyName)
     {
@@ -316,7 +323,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
     public static string GetTypeString(this Type type, bool flattenGenericTypeDefinitions)
     {
       if (type == null)
-        throw new ArgumentNullException("type");
+        throw new ArgumentNullException(nameof(type));
 
       var builder = new StringBuilder();
       if (type.IsNested)
@@ -379,7 +386,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
     {
       if (!interfaceType.IsInterface)
         throw new ArgumentException("interfaceType is not an interface. NotifyAsync InheritsFrom instead.",
-          "interfaceType");
+          nameof(interfaceType));
       if (type == null)
         return false;
       return type.FindInterface(interfaceType) != null;
@@ -441,7 +448,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
       {
         return Activator.CreateInstance(type);
       }
-      
+
       if (type.IsPrimitive)
       {
         try
@@ -455,7 +462,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
 
       if (propertyValue.IsNullOrEmpty() && type.IsValueType && Nullable.GetUnderlyingType(type) != null)
         return null;
-      
+
       recursionDefender = recursionDefender ?? new Stack<Type>();
       foreach (var constructor in type.GetConstructors())
       {
@@ -490,7 +497,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
       {
         return Activator.CreateInstance(type);
       }
-      
+
       throw new InvalidCastException($"Cannot convert the string \"{propertyValue}\" to type {type.Name}");
     }
 
@@ -514,6 +521,7 @@ namespace OpenRasta.TypeSystem.ReflectionBased
           return false;
         }
       }
+
       return true;
     }
   }

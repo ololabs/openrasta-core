@@ -45,30 +45,25 @@ namespace OpenRasta.Pipeline.Contributors
 
       var codecInstance = ResolveCodec(context);
       var writer = CreateWriter(codecInstance);
-      using (Log.Operation(this, "Generating response entity."))
-      {
-        await writer(
-          entity.Instance,
-          entity,
-          context.Request.CodecParameters.ToArray());
 
-        await entity.Stream.FlushAsync();
-        
-        if (isBuffered == true)
-        {
-          await buffered.SendResponseAsync();
-        }
-      }
+      await writer(
+        entity.Instance,
+        entity,
+        context.Request.CodecParameters.ToArray());
+
+      await entity.Stream.FlushAsync();
+
+      if (isBuffered == true) await buffered.SendResponseAsync();
 
       return PipelineContinuation.Continue;
     }
 
-    bool ShouldSendEmptyResponseBody(ICommunicationContext context)
+    static bool ShouldSendEmptyResponseBody(ICommunicationContext context)
     {
       return Is404NotMapped(context) == false;
     }
 
-    bool Is404NotMapped(ICommunicationContext context)
+    static bool Is404NotMapped(ICommunicationContext context)
     {
       return context.OperationResult is OperationResult.NotFound notFound &&
              notFound.Reason == NotFoundReason.NotMapped;
@@ -95,6 +90,8 @@ namespace OpenRasta.Pipeline.Contributors
       }
       else if ((codecType = context.PipelineData.ResponseCodec?.CodecType) != null)
       {
+        // TODO: Switch codec registrations to metamodel
+        
         if (_resolver.HasDependency(codecType) == false)
           _resolver.AddDependency(codecType, DependencyLifetime.Transient);
 
@@ -113,20 +110,22 @@ namespace OpenRasta.Pipeline.Contributors
     static Func<object, IHttpEntity, IEnumerable<string>, Task> CreateWriter(ICodec codecInstance)
     {
       if (codecInstance is IMediaTypeWriterAsync codecAsync) return codecAsync.WriteTo;
-      return (instance, entity, parameters) =>
+
+      Task createWriter(object instance, IHttpEntity entity, IEnumerable<string> parameters)
       {
         ((IMediaTypeWriter) codecInstance).WriteTo(instance, entity, parameters.ToArray());
         return Task.CompletedTask;
-      };
+      }
+
+      return createWriter;
     }
 
-    async Task SendEmptyResponse(ICommunicationContext context)
+    static Task SendEmptyResponse(ICommunicationContext context)
     {
-      Log.WriteDebug("Writing http headers.");
       if (context.Response.StatusCode != 204)
         context.Response.Headers.ContentLength = 0;
 
-      await context.Response.Entity.Stream.FlushAsync();
+      return context.Response.Entity.Stream.FlushAsync();
     }
 
     class BufferedHttpEntity : IHttpEntity
