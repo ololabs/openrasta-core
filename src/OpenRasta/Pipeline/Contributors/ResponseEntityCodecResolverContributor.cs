@@ -39,7 +39,7 @@ namespace OpenRasta.Pipeline.Contributors
 
       try
       {
-        acceptedContentTypes = MediaType.Parse(string.IsNullOrEmpty(acceptHeader) ? "*/*" : acceptHeader);
+        acceptedContentTypes = MediaType.Parse(string.IsNullOrEmpty(acceptHeader) ? "*/*" : acceptHeader).ToList();
       }
       catch (FormatException)
       {
@@ -51,7 +51,18 @@ namespace OpenRasta.Pipeline.Contributors
       }
 
       var sortedCodecs = _codecs.FindMediaTypeWriter(responseEntityType, acceptedContentTypes).ToList();
+      
+      var ext = context.PipelineData.RequestUriFileTypeExtension;
+      if (sortedCodecs.Count > 0 && ext != null)
+      {
+        var matchingExtension =
+          sortedCodecs.Where(codec => codec.Extensions.Contains(ext, StringComparer.OrdinalIgnoreCase)).ToList();
+        if (matchingExtension.Any())
+          sortedCodecs = matchingExtension;
+      }
+      
       var codecsCount = sortedCodecs.Count;
+      
       var negotiatedCodec = sortedCodecs.FirstOrDefault();
 
       if (negotiatedCodec != null)

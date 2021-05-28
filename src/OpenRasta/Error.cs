@@ -1,12 +1,16 @@
 using System;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace OpenRasta
 {
   public class Error
   {
+    //TODO: Consider rewriting a bit what an error is
     public string Title { get; set; }
     public string Message { get; set; }
+    
+    [IgnoreDataMember]
     public Exception Exception { get; set; }
 
     public override string ToString()

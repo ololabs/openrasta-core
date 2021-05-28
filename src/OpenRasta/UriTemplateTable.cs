@@ -8,32 +8,27 @@ namespace OpenRasta
 {
   public class UriTemplateTable
   {
+    public static readonly Uri DefaultBaseAddress = new Uri("http://localhost");
     readonly List<KeyValuePair<UriTemplate, object>> _keyValuePairs;
     ReadOnlyCollection<KeyValuePair<UriTemplate, object>> _keyValuePairsReadOnly;
+    readonly IEnumerable<KeyValuePair<UriTemplate, object>> _resolvablePairs;
 
-    public UriTemplateTable() : this(null, null)
+    public UriTemplateTable(Uri baseAddress = null, IEnumerable<KeyValuePair<UriTemplate, object>> keyValuePairs = null)
     {
-    }
+      BaseAddress = baseAddress == null
+        ? DefaultBaseAddress
+        : baseAddress.Equals(DefaultBaseAddress)
+          ? DefaultBaseAddress
+          : baseAddress;
 
-    public UriTemplateTable(IEnumerable<KeyValuePair<UriTemplate, object>> keyValuePairs)
-      : this(null, keyValuePairs)
-    {
-    }
-
-    public UriTemplateTable(Uri baseAddress)
-      : this(baseAddress, null)
-    {
-    }
-
-    public UriTemplateTable(Uri baseAddress, IEnumerable<KeyValuePair<UriTemplate, object>> keyValuePairs)
-    {
-      BaseAddress = baseAddress;
       _keyValuePairs = keyValuePairs != null
         ? new List<KeyValuePair<UriTemplate, object>>(keyValuePairs)
         : new List<KeyValuePair<UriTemplate, object>>();
+
+      _resolvablePairs = _keyValuePairs.Where(pair => pair.Key.Fragment.Any() == false);
     }
 
-    public Uri BaseAddress { get; set; }
+    public Uri BaseAddress { get; }
 
     public bool IsReadOnly { get; private set; }
 
@@ -52,51 +47,76 @@ namespace OpenRasta
       _keyValuePairsReadOnly = _keyValuePairs.AsReadOnly();
     }
 
-    public Collection<UriTemplateMatch> Match(Uri uri)
+    public Collection<UriTemplateMatch> Match(Uri uri, Uri baseAddress = null)
     {
+        var appBase = baseAddress ?? BaseAddress;
+        
       var lastMaxLiteralSegmentCount = 0;
-      var matches = new Collection<UriTemplateMatch>();
-      foreach (var template in KeyValuePairs)
+      
+      var matches = new List<UriTemplateMatch>();
+      foreach (var template in _resolvablePairs)
       {
-        // TODO: discard uri templates with fragment identifiers until tests are implemented
-        if (template.Key.Fragment.Any()) continue;
-        var potentialMatch = template.Key.Match(BaseAddress, uri);
+        var potentialMatch = template.Key.Match(appBase, uri);
 
         if (potentialMatch == null) continue;
 
+        
+        // var pathSegments = potentialMatch.RelativePathSegments.Count;
+        // WARNING, CODE THAT MAKES NO SENSE MAKES NO SENSE AT ALL!
+        // What it used to say, and it's not matching the code:
+        //
         // this calculates and keep only what matches the maximum possible amount of literal segments
-        var currentMaxLiteralSegmentCount = potentialMatch.RelativePathSegments.Count
-                                            - potentialMatch.WildcardPathSegments.Count;
+        
+        // how many of the path segments were actually matched by a var or a literal
+        // that is all path segments less the wildcard ones
+        // example: /first/second/third/fourth, with /{a}/{b}/{*} would be the first two segments
+        var pathSegmentMatchedToLiteralsOrVars = potentialMatch.RelativePathSegments.Count
+                                                      - potentialMatch.WildcardPathSegments.Count;
+        
+        
+        var currentLiteralSegmentCount = pathSegmentMatchedToLiteralsOrVars;
+        
+        // foreach of the path segment vars, {a}=value
         for (var i = 0; i < potentialMatch.PathSegmentVariables.Count; i++)
-          if (potentialMatch.QueryParameters == null ||
-              potentialMatch.QueryStringVariables[potentialMatch.PathSegmentVariables.GetKey(i)] == null)
-            currentMaxLiteralSegmentCount -= 1;
-
-        potentialMatch.Data = template.Value;
-
-        if (currentMaxLiteralSegmentCount > lastMaxLiteralSegmentCount)
         {
-          lastMaxLiteralSegmentCount = currentMaxLiteralSegmentCount;
+          // var name = a
+          var pathSegmentVarName = potentialMatch.PathSegmentVariables.GetKey(i);
+          // look for lack of query parameters OR ?something={a} missing
+          if (potentialMatch.QueryParameters == null ||
+              potentialMatch.QueryStringVariables[pathSegmentVarName] == null)
+          {
+            currentLiteralSegmentCount -= 1;
+          }
         }
-        else if (currentMaxLiteralSegmentCount < lastMaxLiteralSegmentCount)
+
+        
+        if (currentLiteralSegmentCount > lastMaxLiteralSegmentCount)
+        {
+          lastMaxLiteralSegmentCount = currentLiteralSegmentCount;
+        }
+        else if (currentLiteralSegmentCount < lastMaxLiteralSegmentCount)
         {
           continue;
         }
 
+        var missingQueryStringParameters =
+          Math.Abs(potentialMatch.QueryStringVariables.Count - potentialMatch.QueryParameters.Count);
+        var matchedVariables = potentialMatch.PathSegmentVariables.Count + potentialMatch.QueryStringVariables.Count;
+
+        var literalSegments = pathSegmentMatchedToLiteralsOrVars
+                              - potentialMatch.PathSegmentVariables.Count
+                              - potentialMatch.WildcardPathSegments.Count;
+
+        potentialMatch.Data = template.Value;
+        potentialMatch.Score =
+          literalSegments << 24
+          | matchedVariables << 16
+          | ((1 << 8) - missingQueryStringParameters);
         matches.Add(potentialMatch);
       }
 
-      return SortByMatchQuality(matches).ToCollection();
-    }
-
-    IEnumerable<UriTemplateMatch> SortByMatchQuality(Collection<UriTemplateMatch> matches)
-    {
-      return from m in matches
-        let missingQueryStringParameters = Math.Abs(m.QueryStringVariables.Count - m.QueryParameters.Count)
-        let matchedVariables = m.PathSegmentVariables.Count + m.QueryStringVariables.Count
-        let literalSegments = m.RelativePathSegments.Count - m.PathSegmentVariables.Count
-        orderby literalSegments descending, matchedVariables descending, missingQueryStringParameters
-        select m;
+      matches.Sort((left, right) => left.Score.CompareTo(right.Score) * -1);
+      return new Collection<UriTemplateMatch>(matches);
     }
 
     /// <exception cref="UriTemplateMatchException">Several matching templates were found.</exception>
@@ -121,13 +141,10 @@ namespace OpenRasta
     /// <exception cref="InvalidOperationException">Two equivalent templates were found.</exception>
     void EnsureAllTemplatesAreDifferent()
     {
-      // highly unoptimized, but good enough for now. It's an O(n!) in all cases
-      // if you want to implement a sort algorithm on this, be my guest. It's only called
-      // once per application lifecycle so not sure there's much value.
       for (int i = 0; i < _keyValuePairs.Count; i++)
       {
-        KeyValuePair<UriTemplate, object> rootKey = _keyValuePairs[i];
-        for (int j = i + 1; j < _keyValuePairs.Count; j++)
+        var rootKey = _keyValuePairs[i];
+        for (var j = i + 1; j < _keyValuePairs.Count; j++)
           if (rootKey.Key.IsEquivalentTo(_keyValuePairs[j].Key))
             throw new InvalidOperationException("Two equivalent templates were found.");
       }

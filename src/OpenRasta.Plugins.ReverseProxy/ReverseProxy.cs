@@ -13,7 +13,7 @@ namespace OpenRasta.Plugins.ReverseProxy
 {
   public class ReverseProxy
   {
-    readonly Func<HttpClient> _httpClient;
+    readonly Func<string, HttpClient> _httpClient;
     readonly Action<ICommunicationContext, HttpRequestMessage> _onSend;
     readonly Action<ReverseProxyResponse> _onProxyResponse;
     readonly TimeSpan _timeout;
@@ -21,7 +21,7 @@ namespace OpenRasta.Plugins.ReverseProxy
     readonly string _viaIdentifier;
 
     public ReverseProxy(TimeSpan requestTimeout, bool convertForwardedHeaders, string viaIdentifier,
-      Func<HttpClient> clientFactory,
+      Func<string, HttpClient> clientFactory,
       Action<ICommunicationContext, HttpRequestMessage> onSend,
       Action<ReverseProxyResponse> onProxyResponse)
     {
@@ -31,7 +31,6 @@ namespace OpenRasta.Plugins.ReverseProxy
       _onProxyResponse = onProxyResponse;
       _convertForwardedHeaders = convertForwardedHeaders;
       _viaIdentifier = viaIdentifier;
-      
     }
 
     public async Task<ReverseProxyResponse> Send(ICommunicationContext context, string target)
@@ -43,39 +42,41 @@ namespace OpenRasta.Plugins.ReverseProxy
         Version = new Version(2, 0)
       };
 
-
       PrepareRequestBody(context, requestMessage);
       PrepareRequestHeaders(context, requestMessage, _convertForwardedHeaders);
 
       var viaIdentifier = AppendViaHeaderToRequest(context, requestMessage);
 
-      var httpClient = _httpClient();
 
+      
       var cts = new CancellationTokenSource();
       cts.CancelAfter(_timeout);
       var timeoutToken = cts.Token;
 
+
       ReverseProxyResponse reverseProxyResponse;
+      
       try
       {
         _onSend?.Invoke(context, requestMessage);
+        var httpClient = _httpClient(requestMessage.RequestUri.Host);
         var responseMessage = await httpClient.SendAsync(
           requestMessage,
           HttpCompletionOption.ResponseHeadersRead,
           timeoutToken
         );
         reverseProxyResponse = new ReverseProxyResponse(requestMessage, responseMessage, viaIdentifier);
-        
+        cts.Dispose();
       }
       catch (TaskCanceledException e) when (timeoutToken.IsCancellationRequested || e.CancellationToken == timeoutToken)
       {
         // Note we check both cancellation token because mono/fullfx/core don't have the same behaviour
-        reverseProxyResponse =  new ReverseProxyResponse(requestMessage, via: null, error: e, statusCode: 504);
+        reverseProxyResponse = new ReverseProxyResponse(requestMessage, via: null, error: e, statusCode: 504);
       }
       catch (HttpRequestException e)
       {
         context.ServerErrors.Add(new Error {Exception = e, Title = $"Reverse Proxy failed to connect."});
-        reverseProxyResponse =  new ReverseProxyResponse(requestMessage, via: null, error: e, statusCode: 502);
+        reverseProxyResponse = new ReverseProxyResponse(requestMessage, via: null, error: e, statusCode: 502);
       }
 
       _onProxyResponse?.Invoke(reverseProxyResponse);
@@ -109,45 +110,48 @@ namespace OpenRasta.Plugins.ReverseProxy
         legacyForward.Append(key).Append("=").Append(value);
       }
 
-      foreach (var header in context.Request.Headers)
+      var orRequest = context.Request;
+      foreach (var headerKey in orRequest.Headers.Keys)
       {
         if (convertLegacyHeaders)
         {
-          if (header.Key.Equals("X-Forwarded-Host", StringComparison.OrdinalIgnoreCase))
+          if (headerKey.Equals("X-Forwarded-Host", StringComparison.OrdinalIgnoreCase))
           {
-            appendParameter("host", header.Value);
+            appendParameter("host", orRequest.Headers[headerKey]);
             continue;
           }
 
-          if (header.Key.Equals("X-Forwarded-For", StringComparison.OrdinalIgnoreCase))
+          if (headerKey.Equals("X-Forwarded-For", StringComparison.OrdinalIgnoreCase))
           {
-            appendParameter("for", header.Value);
+            appendParameter("for", orRequest.Headers[headerKey]);
             continue;
           }
 
-          if (header.Key.Equals("X-Forwarded-Proto", StringComparison.OrdinalIgnoreCase))
+          if (headerKey.Equals("X-Forwarded-Proto", StringComparison.OrdinalIgnoreCase))
           {
-            appendParameter("proto", header.Value);
+            appendParameter("proto", orRequest.Headers[headerKey]);
             continue;
           }
 
-          if (header.Key.Equals("X-Forwarded-Base", StringComparison.OrdinalIgnoreCase))
+          if (headerKey.Equals("X-Forwarded-Base", StringComparison.OrdinalIgnoreCase))
           {
-            var baseVal = $"\"{(header.Value[0] != '/' ? "/" + header.Value : header.Value)}\"";
+            var baseHeaderValue = orRequest.Headers[headerKey];
+            var baseVal = $"\"{(baseHeaderValue[0] != '/' ? "/" + baseHeaderValue : baseHeaderValue)}\"";
             appendParameter("base", baseVal);
             continue;
           }
         }
 
-        if (header.Key.Equals("host", StringComparison.OrdinalIgnoreCase)) continue;
+        if (headerKey.Equals("host", StringComparison.OrdinalIgnoreCase)) continue;
 
-        if (HttpHeaderClassification.IsMicrosoftHttpContentHeader(header.Key))
+        if (HttpHeaderClassification.IsMicrosoftHttpContentHeader(headerKey))
         {
           if (request.Content == null) continue;
-          request.Content.Headers.Add(header.Key, header.Value);
+
+          request.Content.Headers.Add(headerKey, orRequest.Headers.GetValues(headerKey));
         }
-        else if (!HttpHeaderClassification.IsHopByHopHeader(header.Key))
-          request.Headers.Add(header.Key, header.Value);
+        else if (!HttpHeaderClassification.IsHopByHopHeader(headerKey))
+          request.Headers.Add(headerKey, orRequest.Headers.GetValues(headerKey));
       }
 
       if (convertLegacyHeaders && legacyForward?.Length > 0)

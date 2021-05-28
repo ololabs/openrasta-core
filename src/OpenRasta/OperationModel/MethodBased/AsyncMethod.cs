@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using OpenRasta.Binding;
@@ -11,14 +12,15 @@ namespace OpenRasta.OperationModel.MethodBased
   {
     public IDictionary<string, object> ExtendedProperties { get; } = new Dictionary<string, object>();
 
-    public AsyncMethod(IMethod method, IObjectBinderLocator binderLocator = null, IDependencyResolver resolver = null)
-      : base(method, binderLocator, resolver)
+    public AsyncMethod(IType targetType, IMethod method, IObjectBinderLocator binderLocator = null, IDependencyResolver resolver = null,
+      Dictionary<Type, object[]> attributeCache = null)
+      : base(targetType,method, binderLocator, resolver, attributeCache)
     {
     }
 
     public Task<IEnumerable<OutputMember>> InvokeAsync()
     {
-      var instance = CreateInstance(OwnerType, Resolver);
+      var instance = CreateInstance(TargetType, Resolver);
       var parameters = GetParameters();
 
       return ((Task) Method.Invoke(instance, parameters).Single())
@@ -30,14 +32,15 @@ namespace OpenRasta.OperationModel.MethodBased
   {
     public IDictionary<string, object> ExtendedProperties { get; } = new Dictionary<string, object>();
 
-    public AsyncMethod(IMethod method, IObjectBinderLocator binderLocator = null, IDependencyResolver resolver = null)
-      : base(method, binderLocator, resolver)
+    public AsyncMethod(IType targetType, IMethod method, IObjectBinderLocator binderLocator = null, IDependencyResolver resolver = null,
+      Dictionary<Type, object[]> attributeCache = null)
+      : base(targetType,method, binderLocator, resolver, attributeCache)
     {
     }
 
     public async Task<IEnumerable<OutputMember>> InvokeAsync()
     {
-      var instance = CreateInstance(OwnerType, Resolver);
+      var instance = CreateInstance(TargetType, Resolver);
       var parameters = GetParameters();
 
       var result = await (Task<T>) Method.Invoke(instance, parameters).Single();

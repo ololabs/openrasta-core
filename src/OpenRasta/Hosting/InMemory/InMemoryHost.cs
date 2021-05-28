@@ -5,6 +5,7 @@ using OpenRasta.Concordia;
 using OpenRasta.Configuration;
 using OpenRasta.Diagnostics;
 using OpenRasta.DI;
+using OpenRasta.Hosting.Compatibility;
 using OpenRasta.Pipeline;
 using OpenRasta.Web;
 
@@ -32,7 +33,7 @@ namespace OpenRasta.Hosting.InMemory
       IDependencyResolver dependencyResolver = null,
       StartupProperties startup = null)
     {
-      Resolver = dependencyResolver ?? new InternalDependencyResolver();
+      Resolver = dependencyResolver ?? (configuration as IDependencyResolverAccessor)?.Resolver ?? new InternalDependencyResolver();
       _configuration = configuration ?? new DelegateConfigurationSource(null);
       ApplicationVirtualPath = "/";
       HostManager = HostManager.RegisterHost(this);
@@ -79,7 +80,7 @@ namespace OpenRasta.Hosting.InMemory
         ApplicationBaseUri = new Uri(
           new Uri("http://localhost/", UriKind.Absolute),
           new Uri(ApplicationVirtualPath, UriKind.Relative)),
-        Request = request,
+        Request = new InMemoryReadOnlyRequest(request),
         Response = new InMemoryResponse(),
         ServerErrors = new ServerErrorList {Log = Resolver.Resolve<ILogger>()},
       };
@@ -99,6 +100,9 @@ namespace OpenRasta.Hosting.InMemory
           RaiseIncomingRequestProcessed(context);
         }
       }
+
+      // lowercase r ensures the use of RFC 822 formatting
+      context.Response.Headers.Add("Date", DateTime.Now.ToString("r"));
 
       if (context.Response.Entity?.Stream.CanSeek == true)
         context.Response.Entity.Stream.Position = 0;
@@ -129,13 +133,14 @@ namespace OpenRasta.Hosting.InMemory
 
     protected virtual void RaiseIncomingRequestProcessed(ICommunicationContext context)
     {
-      IncomingRequestProcessed.Raise(this, new IncomingRequestProcessedEventArgs(context));
+      IncomingRequestProcessedEventArgs args = new IncomingRequestProcessedEventArgs(context);
+      IncomingRequestProcessed?.Invoke(this, args);
     }
 
     protected virtual Task RaiseIncomingRequestReceived(ICommunicationContext context)
     {
       var incomingRequestReceivedEventArgs = new IncomingRequestReceivedEventArgs(context);
-      IncomingRequestReceived.Raise(this, incomingRequestReceivedEventArgs);
+      IncomingRequestReceived?.Invoke(this, incomingRequestReceivedEventArgs);
       return incomingRequestReceivedEventArgs.RunTask;
     }
 
@@ -156,14 +161,14 @@ namespace OpenRasta.Hosting.InMemory
 
     void RaiseStart(StartupProperties properties)
     {
-      _legacyStart.Raise(this);
+      _legacyStart?.Invoke(this, EventArgs.Empty);
       var start = _start;
       start?.Invoke(this, properties);
     }
 
     void RaiseStop(StartupProperties startupProperties)
     {
-      Stop.Raise(this, EventArgs.Empty);
+      Stop?.Invoke(this, EventArgs.Empty);
     }
 
     void CheckNotDisposed()

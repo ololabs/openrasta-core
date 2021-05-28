@@ -5,14 +5,13 @@ using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
 using OpenRasta.Collections;
-using OpenRasta.Configuration.MetaModel;
 using OpenRasta.TypeSystem;
 
 namespace OpenRasta.Web
 {
-  public class TemplatedUriResolver : IUriResolver, IUriTemplateParser
+  public class TemplatedUriResolver : IUriResolver, IUriTemplateParser, INewUriResolver
   {
-    UriTemplateTable _templates = new UriTemplateTable();
+    UriTemplateTable _templates = new UriTemplateTable(UriTemplateTable.DefaultBaseAddress);
     public ITypeSystem TypeSystem { get; set; }
     public int Count => _templates.KeyValuePairs.Count;
     public IDictionary<object, HashSet<string>> UriNames { get; } = new Dictionary<object, HashSet<string>>();
@@ -41,7 +40,7 @@ namespace OpenRasta.Web
         Registration = registration
       };
       _templates.KeyValuePairs.Add(new KeyValuePair<UriTemplate, object>(descriptor.Uri, descriptor));
-      _templates.BaseAddress = new Uri("http://localhost/").IgnoreAuthority();
+      
       var keys = UriNamesForKey(resourceKey);
 
       if (registration.UriName != null)
@@ -112,17 +111,18 @@ namespace OpenRasta.Web
       return template.BindByName(baseAddress, keyValues);
     }
 
-    public UriRegistration Match(Uri uriToMatch)
+    public UriRegistration Match(Uri baseAddress, Uri uriToMatch)
     {
       if (uriToMatch == null)
         return null;
-      var tableMatches = _templates.Match(uriToMatch.IgnoreSchemePortAndAuthority());
+      
+      var tableMatches = _templates.Match(uriToMatch, baseAddress);
       if (tableMatches == null || tableMatches.Count == 0)
         return null;
-      var urlDescriptor = (UrlDescriptor) tableMatches[0].Data;
 
 
-      var allResults = tableMatches.Select(m =>
+      var allResults = tableMatches
+        .Select(m =>
       {
         var descriptor = (UrlDescriptor) m.Data;
         return new TemplatedUriMatch(
@@ -132,8 +132,8 @@ namespace OpenRasta.Web
       }).ToList();
 
       return new UriRegistration(
-        urlDescriptor.Registration.ResourceModel,
-        urlDescriptor.Registration.UriModel)
+        allResults[0].ResourceModel,
+        allResults[0].UriModel)
       {
         Results = allResults
       };
@@ -152,9 +152,8 @@ namespace OpenRasta.Web
     static bool CompatibleKeys(object requestResourceKey, object templateResourceKey)
     {
       var requestType = requestResourceKey as IType;
-      var templateType = templateResourceKey as IType;
       return (requestType != null &&
-              templateType != null &&
+              templateResourceKey is IType templateType &&
               requestType.IsAssignableTo(templateType)) ||
              requestResourceKey.Equals(templateResourceKey);
     }
@@ -210,19 +209,7 @@ namespace OpenRasta.Web
       public UriTemplate Uri { get; set; }
       public string UriName { get; set; }
     }
-  }
 
-  public class TemplatedUriMatch
-  {
-    public ResourceModel ResourceModel { get; }
-    public UriModel UriModel { get; }
-    public UriTemplateMatch Match { get; }
-
-    public TemplatedUriMatch(ResourceModel resourceModel, UriModel uriModel, UriTemplateMatch match)
-    {
-      ResourceModel = resourceModel;
-      UriModel = uriModel;
-      Match = match;
-    }
+    public UriRegistration Match(Uri uriToMatch) => Match(null, uriToMatch);
   }
 }
