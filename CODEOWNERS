@@ -1,0 +1,13 @@
+# If changes are made to the below-defined files/directories,
+# the associated team will be requested for review when
+# someone opens a pull request.
+
+# Order in this file matters: last match wins.  So, generic fallback rules must go first,
+# followed by more specific rules
+
+# =========================================
+# Broad Rules that we expect to be overriden by specific rules lower down.
+# =========================================
+
+* 	@ololabs/ordering-foundation
+
