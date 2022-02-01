@@ -6,16 +6,17 @@
     <PackageIconUrl>http://openrasta.org/openRastaLogo-32x32.png</PackageIconUrl>
     <Description>OpenRasta is an open-source .NET framework for building REST APIs</Description>
     <PackageTags>OpenRasta REST HTTP XML JSON API</PackageTags>
-    <Version>2.6.0</Version>
+    <Version>5.3.0</Version>
     <Copyright>Copyright 2007-2018</Copyright>
     <PackageId>openrasta-core</PackageId>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Company>Caffeine IT- naughtyProd Limited</Company>
     <InformationalVersion>2.6.0</InformationalVersion>
-    <FileVersion>2.6.0</FileVersion>
+    <FileVersion>5.3.0</FileVersion>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <LangVersion>7.1</LangVersion>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
