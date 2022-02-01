@@ -6,7 +6,7 @@
     <PackageIconUrl>http://openrasta.org/openRastaLogo-32x32.png</PackageIconUrl>
     <Description>OpenRasta is an open-source .NET framework for building REST APIs</Description>
     <PackageTags>OpenRasta REST HTTP XML JSON API</PackageTags>
-    <Version>5.3.0</Version>
+    <Version>5.3.1</Version>
     <Copyright>Copyright 2007-2018</Copyright>
     <PackageId>openrasta-core</PackageId>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
