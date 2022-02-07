@@ -12,7 +12,7 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Company>Videndel</Company>
     <InformationalVersion>2.6.0</InformationalVersion>
-    <FileVersion>2.6.0</FileVersion>
+    <FileVersion>5.3.2</FileVersion>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -20,8 +20,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Owin" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\OpenRasta\OpenRasta.csproj" />
+    <PackageReference Include="openrasta-core" Version="5.2.2" />
   </ItemGroup>
 </Project>
