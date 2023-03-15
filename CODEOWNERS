@@ -9,5 +9,5 @@
 # Broad Rules that we expect to be overriden by specific rules lower down.
 # =========================================
 
-* 	@ololabs/ordering-foundation
+* 	@ololabs/core-ordering-features
 
