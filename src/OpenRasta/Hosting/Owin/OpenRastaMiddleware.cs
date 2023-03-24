@@ -7,6 +7,7 @@ using OpenRasta.Diagnostics;
 using OpenRasta.DI;
 using OpenRasta.Web;
 using AppFunc = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Threading.Tasks.Task>;
+using OpenRasta.Concordia;
 
 namespace OpenRasta.Hosting.Katana
 {
@@ -57,13 +58,16 @@ namespace OpenRasta.Hosting.Katana
     static readonly object SyncRoot = new object();
     HostManager _hostManager;
     readonly OwinHost _host;
+    private readonly StartupProperties _startupProperties;
 
     public OpenRastaMiddleware(
       IConfigurationSource options,
       IDependencyResolverAccessor resolverAccesor = null,
-      CancellationToken onDisposing = default(CancellationToken))
+      CancellationToken onDisposing = default(CancellationToken),
+      StartupProperties startupProperties = null)
     {
       _host = new OwinHost(options, resolverAccesor);
+      _startupProperties = startupProperties ?? new StartupProperties();
       TryInitializeHosting(onDisposing);
     }
 
@@ -109,7 +113,7 @@ namespace OpenRasta.Hosting.Katana
         _hostManager = hostManager;
         try
         {
-          _host.RaiseStart();
+          _host.RaiseStart(_startupProperties);
         }
         catch
         {

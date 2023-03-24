@@ -12,14 +12,18 @@ namespace OpenRasta.Hosting.Katana
 {
   public class OwinHost : IHost, IHostStartWithStartupProperties
   {
-    public OwinHost(
+     private readonly StartupProperties _startupProperties;
+
+     public OwinHost(
       IConfigurationSource configuration,
       IDependencyResolverAccessor resolverAccesor = null,
-      string applicationVirtualPath = "/")
+      string applicationVirtualPath = "/",
+      StartupProperties startupProperties = null)
     {
       ConfigurationSource = configuration;
       ResolverAccessor = resolverAccesor;
       ApplicationVirtualPath = applicationVirtualPath;
+      _startupProperties = startupProperties;
     }
 
     public IConfigurationSource ConfigurationSource { get; set; }
@@ -56,7 +60,7 @@ namespace OpenRasta.Hosting.Katana
     internal async Task<ICommunicationContext> ProcessRequestAsync(IOwinContext owinContext)
     {
       var commContext = new OwinCommunicationContext(owinContext, TraceSourceLogger.Instance);
-      
+
       var ambientContext = new AmbientContext();
 
       try
@@ -90,7 +94,7 @@ namespace OpenRasta.Hosting.Katana
 
     internal virtual void RaiseStart()
     {
-      RaiseStart(new StartupProperties());
+      RaiseStart(_startupProperties);
     }
 
     public void RaiseStop()
