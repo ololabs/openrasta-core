@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using OpenRasta.Concordia;
 using OpenRasta.Configuration;
 using OpenRasta.DI;
 using AppFunc = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Threading.Tasks.Task>;
@@ -15,9 +16,10 @@ namespace OpenRasta.Hosting.Katana
       this Action<MidFunc> builder,
       IConfigurationSource configurationSource,
       IDependencyResolverAccessor dependencyResolver = null,
-      CancellationToken onAppDisposing = default(CancellationToken))
+      CancellationToken onAppDisposing = default(CancellationToken),
+      StartupProperties startupProperties = null)
     {
-      builder(new OpenRastaMiddleware(configurationSource, dependencyResolver, onAppDisposing).ToMidFunc());
+      builder(new OpenRastaMiddleware(configurationSource, dependencyResolver, onAppDisposing, startupProperties).ToMidFunc());
       return builder;
     }
   }
@@ -26,9 +28,10 @@ namespace OpenRasta.Hosting.Katana
   {
     public static MidFunc CreateMiddleware(IConfigurationSource configurationSource,
       IDependencyResolverAccessor dependencyResolver = null,
-      CancellationToken onAppDisposing = default(CancellationToken))
+      CancellationToken onAppDisposing = default(CancellationToken),
+      StartupProperties startupProperties = null)
     {
-      return new OpenRastaMiddleware(configurationSource, dependencyResolver, onAppDisposing).ToMidFunc();
+      return new OpenRastaMiddleware(configurationSource, dependencyResolver, onAppDisposing, startupProperties).ToMidFunc();
     }
   }
 }
