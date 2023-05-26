@@ -78,6 +78,12 @@ namespace OpenRasta.Concordia
       {
       }
 
+      public bool DisableResponseWriteTracking
+      {
+        get => Get("openrasta.pipeline.TrackWrites", false);
+        set => Set("openrasta.pipeline.TrackWrites", value);
+      }
+
       public bool Validate
       {
         get => Get("openrasta.pipeline.validate", true);

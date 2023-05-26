@@ -198,7 +198,12 @@ namespace OpenRasta.Hosting
     {
       using (DependencyManager.ScopedResolver(Resolver))
       {
-        var context = new WriteTrackingResponseCommunicationContext(e.Context);
+        var context = e.Context;
+        if (!_startupProperties.OpenRasta.Pipeline.DisableResponseWriteTracking)
+        {
+          context = new WriteTrackingResponseCommunicationContext(e.Context);
+        }
+
         context.PipelineData[Keys.Request.ResolverRequestScope] = Resolver.CreateRequestScope();
 
         // register the required dependency in the web context
