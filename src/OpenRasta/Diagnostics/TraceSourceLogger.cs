@@ -22,6 +22,12 @@ namespace OpenRasta.Diagnostics
     readonly TraceSource _source;
     static readonly TraceSource DefaultTraceSource = new TraceSource("openrasta");
 
+    /// <summary>
+    /// Levels to trace for all <see cref="TraceSourceLogger"/>.
+    /// Default: <see cref="SourceLevels.Warning"/>.
+    /// </summary>
+    public static SourceLevels Levels { get; set; } = SourceLevels.Warning;
+
     public TraceSourceLogger() : this(DefaultTraceSource)
     {
     }
@@ -53,6 +59,9 @@ namespace OpenRasta.Diagnostics
 
     public IDisposable Operation(object source, string name)
     {
+      if (!Levels.HasFlag(SourceLevels.ActivityTracing))
+        return EmptyDisposable.Instance;
+
       var msg = $"{source.GetType().Name} ({name})";
       _source.TraceData(TraceEventType.Start, 1, msg);
       Trace.CorrelationManager.StartLogicalOperation(source.GetType().Name);
@@ -62,16 +71,25 @@ namespace OpenRasta.Diagnostics
 
     public void WriteDebug(string message, params object[] format)
     {
+      if (!Levels.HasFlag(SourceLevels.Verbose))
+        return;
+
       _source.TraceData(TraceEventType.Verbose, 0, message.With(format));
     }
 
     public void WriteError(string message, params object[] format)
     {
+      if (!Levels.HasFlag(SourceLevels.Error))
+        return;
+
       _source.TraceData(TraceEventType.Error, 0, message.With(format));
     }
 
     public void WriteException(Exception e)
     {
+      if (!Levels.HasFlag(SourceLevels.Error))
+        return;
+
       if (e == null)
         return;
       WriteError("An error of type {0} has been thrown", e.GetType());
@@ -81,11 +99,17 @@ namespace OpenRasta.Diagnostics
 
     public void WriteInfo(string message, params object[] format)
     {
+      if (!Levels.HasFlag(SourceLevels.Information))
+        return;
+
       _source.TraceData(TraceEventType.Information, 0, message.With(format));
     }
 
     public void WriteWarning(string message, params object[] format)
     {
+      if (!Levels.HasFlag(SourceLevels.Warning))
+        return;
+
       _source.TraceData(TraceEventType.Warning, 0, message.With(format));
     }
 
@@ -99,6 +123,13 @@ namespace OpenRasta.Diagnostics
       {
         Source.TraceData(TraceEventType.Stop, 1, $"Exiting {Initiator.GetType().Name}: {Message}");
       }
+    }
+
+    class EmptyDisposable : IDisposable
+    {
+      public static readonly IDisposable Instance = new EmptyDisposable();
+
+      public void Dispose() { }
     }
   }
 }
