@@ -12,7 +12,7 @@ namespace OpenRasta.Hosting.AspNet
 {
   public class OpenRastaModuleAsync : IHttpModule
   {
-    private static ILogger _log = TraceSourceLogger.Instance;
+    private static ILogger _log = DefaultLogger.Instance;
     public void Dispose()
     {
       _host.Value.host.RaiseStop();

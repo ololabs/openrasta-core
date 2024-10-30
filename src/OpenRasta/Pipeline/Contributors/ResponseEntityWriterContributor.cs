@@ -15,7 +15,7 @@ namespace OpenRasta.Pipeline.Contributors
   {
     readonly IDependencyResolver _resolver;
 
-    public ILogger Log { get; } = TraceSourceLogger.Instance;
+    public ILogger Log => DefaultLogger.Instance;
 
     public ResponseEntityWriterContributor(IDependencyResolver resolver)
     {

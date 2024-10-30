@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using OpenRasta.Concordia;
 using OpenRasta.Diagnostics;
-using OpenRasta.DI;
 using OpenRasta.Pipeline.CallGraph;
 
 namespace OpenRasta.Pipeline
@@ -12,7 +11,7 @@ namespace OpenRasta.Pipeline
   {
     readonly IEnumerable<IPipelineContributor> _contributors;
     readonly IGenerateCallGraphs _callGrapher;
-    static ILogger Log { get; } = TraceSourceLogger.Instance;
+    static ILogger Log => DefaultLogger.Instance;
 
     public ThreePhasePipelineInitializer(
       IEnumerable<IPipelineContributor> contributors,

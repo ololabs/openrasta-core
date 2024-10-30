@@ -59,7 +59,7 @@ namespace OpenRasta.Hosting.Katana
 
     internal async Task<ICommunicationContext> ProcessRequestAsync(IOwinContext owinContext)
     {
-      var commContext = new OwinCommunicationContext(owinContext, TraceSourceLogger.Instance);
+      var commContext = new OwinCommunicationContext(owinContext, DefaultLogger.Instance);
 
       var ambientContext = new AmbientContext();
 

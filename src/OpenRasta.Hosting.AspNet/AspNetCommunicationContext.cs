@@ -20,7 +20,7 @@ namespace OpenRasta.Hosting.AspNet
         if (context.Items.Contains(COMM_CONTEXT_KEY))
           return (AspNetCommunicationContext) context.Items[COMM_CONTEXT_KEY];
         var orContext = new AspNetCommunicationContext(
-          TraceSourceLogger.Instance,
+          DefaultLogger.Instance,
           context,
           new AspNetRequest(context),
           new AspNetResponse(context));

@@ -4,6 +4,11 @@ using OpenRasta.DI;
 
 namespace OpenRasta.Diagnostics
 {
+  public static class DefaultLogger
+  {
+    public static ILogger Instance { get; set; } = new TraceSourceLogger();
+  }
+
   public class TraceSourceLogger<T> : TraceSourceLogger, ILogger<T> where T : ILogSource
   {
     public TraceSourceLogger()
@@ -16,8 +21,6 @@ namespace OpenRasta.Diagnostics
   {
     readonly TraceSource _source;
     static readonly TraceSource DefaultTraceSource = new TraceSource("openrasta");
-
-    public static readonly ILogger Instance = new TraceSourceLogger();
 
     public TraceSourceLogger() : this(DefaultTraceSource)
     {
