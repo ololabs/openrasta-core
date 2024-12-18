@@ -75,16 +75,8 @@ namespace OpenRasta.Hosting.Katana
     {
       ICommunicationContext commContext;
       owinContext.Response.OnSendingHeaders(_ => this.HeadersSent = true, null);
-      try
-      {
-        commContext = await _host.ProcessRequestAsync(owinContext);
-      }
-      catch (Exception e) when (HeadersSent == false && _startupProperties.OpenRasta.Errors.HandleAllExceptions)
-      {
-        owinContext.Response.StatusCode = 500;
-        owinContext.Response.Write(e.ToString());
-        return;
-      }
+
+      commContext = await _host.ProcessRequestAsync(owinContext);
 
       if (commContext != null &&
           commContext.OperationResult is OperationResult.NotFound notFound &&
