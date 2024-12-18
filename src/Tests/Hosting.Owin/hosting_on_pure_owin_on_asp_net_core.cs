@@ -2,6 +2,7 @@
 using System.Net.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using OpenRasta.Hosting.Katana;
@@ -20,10 +21,37 @@ namespace Tests.Hosting.Owin
     {
       server = new TestServer(
         new WebHostBuilder()
-          .Configure(app =>
-            app.UseOwin(builder =>
+          .Configure(app => app
+            .Use(next => async httpContext =>
+            {
+              try
+              {
+                await next(httpContext);
+              }
+              catch(Exception ex)
+              {
+                // Default behavior is to write the stack trace
+                httpContext.Response.StatusCode = 500;
+
+                // Incredibly annoying TargetInvocationException
+                var message = ex.InnerException?.Message ?? ex.Message;
+                await httpContext.Response.WriteAsync(message);
+              }
+            })
+            .UseOwin(builder =>
               builder.UseOpenRasta(
                 new TaskApi(),
+                startupProperties: new OpenRasta.Concordia.StartupProperties
+                {
+                  OpenRasta =
+                  {
+                    Errors =
+                    {
+                      HandleAllExceptions = false,
+                      HandleCatastrophicExceptions = false,
+                    },
+                  },
+                },
                 onAppDisposing: app.ApplicationServices.GetService<IApplicationLifetime>().ApplicationStopping))));
       client = server.CreateClient();
     }
@@ -50,6 +78,15 @@ namespace Tests.Hosting.Owin
       response.EnsureSuccessStatusCode();
       response.Content.Headers.ContentLength.ShouldBe(0);
     }
+
+    [Fact]
+    public async void can_get_handled_exception()
+    {
+      var response = await client.GetAsync("ping-exception");
+      response.StatusCode.ShouldBe(System.Net.HttpStatusCode.InternalServerError);
+      (await response.Content.ReadAsStringAsync()).ShouldBe("This is a test exception");
+    }
+
     public void Dispose()
     {
       server?.Dispose();

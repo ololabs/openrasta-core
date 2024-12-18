@@ -79,7 +79,7 @@ namespace OpenRasta.Hosting.Katana
       {
         commContext = await _host.ProcessRequestAsync(owinContext);
       }
-      catch (Exception e) when (HeadersSent == false)
+      catch (Exception e) when (HeadersSent == false && _startupProperties.OpenRasta.Errors.HandleAllExceptions)
       {
         owinContext.Response.StatusCode = 500;
         owinContext.Response.Write(e.ToString());
