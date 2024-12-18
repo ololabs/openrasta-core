@@ -27,6 +27,7 @@ namespace Tests.Infrastructure
         .ResourcesNamed("health")
         .AtUri("/ping-silently").Named("Silent")
         .And.AtUri("/ping-empty-content").Named("NoContent")
+        .And.AtUri("/ping-exception").Named("Exception")
         .HandledBy<TaskApiHealthHandler>();
 
       ResourceSpace.Has
