@@ -120,6 +120,14 @@ namespace OpenRasta.Concordia
       public bool HandleAllExceptions {
         get => Get(Keys.HandleAllExceptions, true);
         set => Set(Keys.HandleAllExceptions, value);}
+
+      /// <summary>
+      /// Enables <see cref="ResponseRetryMiddleware"/> even if <see cref="HandleAllExceptions"/> is <see langword="false"/>.
+      /// Default: <see langword="false"/>.
+      /// </summary>
+      public bool EnableResponseRetryMiddleware {
+        get => Get(Keys.EnableResponseRetryMiddleware, false);
+        set => Set(Keys.EnableResponseRetryMiddleware, value);}
     }
   }
 }

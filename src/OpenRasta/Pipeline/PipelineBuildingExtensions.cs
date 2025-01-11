@@ -33,7 +33,7 @@ namespace OpenRasta.Pipeline
           {
             converter = CreateResponseMiddleware;
             var errors = startupProperties?.OpenRasta.Errors;
-            if (errors?.HandleAllExceptions == true)
+            if (errors?.EnableResponseRetryMiddleware == true || errors?.HandleAllExceptions == true)
               yield return (new ResponseRetryMiddleware(), null);
             break;
           }
