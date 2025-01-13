@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using OpenRasta.Pipeline;
+using OpenRasta.Web.Internal;
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace OpenRasta.Concordia
@@ -99,15 +100,34 @@ namespace OpenRasta.Concordia
       {
       }
 
+      /// <summary>
+      /// Adds <see cref="CatastrophicFailureMiddleware"/> to the pipeline,
+      /// which handles exceptions that escape the OpenRasta pipeline.
+      /// Responds with a plain text 500 that includes the exception stack trace.
+      /// </summary>
       public bool HandleCatastrophicExceptions
       {
         get => Get(Keys.HandleCatastrophicExceptions, true);
         set => Set(Keys.HandleCatastrophicExceptions, value);
       }
 
+      /// <summary>
+      /// Instructs <see cref="ResponseMiddleware"/> to catch exceptions,
+      /// which will <see cref="CommunicationContextExtensions.Abort"/> failed requests.
+      /// Also enables <see cref="ResponseRetryMiddleware"/> to render the error response.
+      /// Default: <see langword="true"/>.
+      /// </summary>
       public bool HandleAllExceptions {
         get => Get(Keys.HandleAllExceptions, true);
         set => Set(Keys.HandleAllExceptions, value);}
+
+      /// <summary>
+      /// Enables <see cref="ResponseRetryMiddleware"/> even if <see cref="HandleAllExceptions"/> is <see langword="false"/>.
+      /// Default: <see langword="false"/>.
+      /// </summary>
+      public bool EnableResponseRetryMiddleware {
+        get => Get(Keys.EnableResponseRetryMiddleware, false);
+        set => Set(Keys.EnableResponseRetryMiddleware, value);}
     }
   }
 }

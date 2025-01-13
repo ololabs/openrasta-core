@@ -14,6 +14,12 @@ namespace OpenRasta.Web.Internal
         .MakeAbsolute("http://localhost");
     }
 
+    /// <summary>
+    /// Aborts the current pipeline execution and sets the response to a 500 Internal Server Error.
+    /// The response resource contains <see cref="ICommunicationContext.ServerErrors"/>.
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="e"></param>
     public static void Abort(this ICommunicationContext context, Exception e = null)
     {
 #pragma warning disable 618

@@ -6,6 +6,10 @@ using OpenRasta.Web.Internal;
 namespace OpenRasta.Pipeline
 {
   
+  /// <summary>
+  /// Tries rendering a response if invoking the rest of the pipeline throws an exception
+  /// or the final <see cref="PipelineData.PipelineStage"/> is <see cref="PipelineContinuation.RenderNow"/>.
+  /// </summary>
   public class ResponseRetryMiddleware : IPipelineMiddlewareFactory, IPipelineMiddleware
   {
     IPipelineMiddleware _responsePipeline;

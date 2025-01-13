@@ -10,5 +10,6 @@
 
     public const string HandleCatastrophicExceptions = "openrasta.errors.HandleCatastrophicExceptions";
     public const string HandleAllExceptions = "openrasta.errors.HandleAllExceptions";
+    public const string EnableResponseRetryMiddleware = "openrasta.errors." + nameof(EnableResponseRetryMiddleware);
   }
 }

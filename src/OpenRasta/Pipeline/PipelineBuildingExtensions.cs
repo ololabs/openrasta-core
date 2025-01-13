@@ -32,7 +32,8 @@ namespace OpenRasta.Pipeline
           case KnownStages.IOperationResultInvocation _:
           {
             converter = CreateResponseMiddleware;
-            if (startupProperties?.OpenRasta.Errors.HandleAllExceptions == true)
+            var errors = startupProperties?.OpenRasta.Errors;
+            if (errors?.EnableResponseRetryMiddleware == true || errors?.HandleAllExceptions == true)
               yield return (new ResponseRetryMiddleware(), null);
             break;
           }
